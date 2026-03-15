@@ -2,4 +2,5 @@ TOKEN = "8605303489:AAHrwMdTPCKhJfHaqkYmj4Yqb-oJuf0lEM0"
 
 CHANNEL = "@uzbtarjimakno"
 
-ADMIN = 123456789
+ADMIN = 8521973433
+
