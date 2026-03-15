@@ -1,1 +1,1 @@
-CHANNEL = "https://t.me/uzbtarjimakno"
+CHANNEL = "@uzbtarjimakno"
