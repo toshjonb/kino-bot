@@ -13,11 +13,38 @@ async def create_db():
             name TEXT,
             category TEXT,
             file_id TEXT,
+            caption TEXT,
             views INTEGER DEFAULT 0
         )
         """)
 
         await db.commit()
+
+
+async def add_movie(name, category, file_id, caption):
+
+    async with aiosqlite.connect(DB) as db:
+
+        await db.execute(
+            "INSERT INTO movies(name,category,file_id,caption) VALUES(?,?,?,?)",
+            (name, category, file_id, caption)
+        )
+
+        await db.commit()
+
+
+async def search_movie(name):
+
+    async with aiosqlite.connect(DB) as db:
+
+        cursor = await db.execute(
+            "SELECT * FROM movies WHERE name LIKE ?",
+            (f"%{name}%",)
+        )
+
+        movies = await cursor.fetchall()
+
+        return movies
 
 
 async def get_movie_by_id(movie_id):
@@ -44,16 +71,3 @@ async def add_view(movie_id):
         )
 
         await db.commit()
-
-
-async def top_movies():
-
-    async with aiosqlite.connect(DB) as db:
-
-        cursor = await db.execute(
-            "SELECT * FROM movies ORDER BY views DESC LIMIT 10"
-        )
-
-        movies = await cursor.fetchall()
-
-        return movies
