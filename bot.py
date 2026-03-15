@@ -2,7 +2,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.utils import executor
 
 from config import TOKEN, CHANNEL, ADMIN
-from database import create_db, get_movie_by_id, add_view, top_movies
+from database import *
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher(bot)
@@ -24,15 +24,16 @@ async def start(message: types.Message):
     if not await check_sub(message.from_user.id):
 
         await message.answer(
-            f"❗ Botdan foydalanish uchun kanalga obuna bo‘ling\n\n{CHANNEL}"
+            f"❗ Kanalga obuna bo‘ling\n\n{CHANNEL}"
         )
         return
 
     await message.answer(
-        "🎬 Kino botga xush kelibsiz\n\nKino kodini yozing"
+        "🎬 Kino bot\n\nKino nomi yoki kodini yozing"
     )
 
 
+# kino ID bilan
 @dp.message_handler(lambda message: message.text.isdigit())
 async def movie_code(message: types.Message):
 
@@ -46,33 +47,40 @@ async def movie_code(message: types.Message):
     await bot.send_video(
         message.chat.id,
         movie[3],
-        caption=f"""
-🎬 {movie[1]}
-
-📂 {movie[2]}
-⭐ {movie[4]} ko‘rildi
-"""
+        caption=movie[4]
     )
 
     await add_view(movie[0])
 
 
-@dp.message_handler(commands=['top'])
-async def top(message: types.Message):
+# kino nomi bilan qidiruv
+@dp.message_handler()
+async def search(message: types.Message):
 
-    movies = await top_movies()
+    movies = await search_movie(message.text)
 
-    text = "⭐ Eng mashhur kinolar\n\n"
+    if not movies:
+
+        await message.answer("❌ Kino topilmadi")
+        return
 
     for m in movies:
 
-        text += f"{m[0]}. {m[1]} ({m[4]} views)\n"
+        await message.answer_video(
+            m[3],
+            caption=f"""
+🎬 {m[1]}
 
-    await message.answer(text)
+📂 {m[2]}
+⭐ {m[5]} ko‘rildi
+ID: {m[0]}
+"""
+        )
 
 
+# admin panel
 @dp.message_handler(commands=['admin'])
-async def admin_panel(message: types.Message):
+async def admin(message: types.Message):
 
     if message.from_user.id != ADMIN:
         return
@@ -80,7 +88,6 @@ async def admin_panel(message: types.Message):
     kb = types.ReplyKeyboardMarkup(resize_keyboard=True)
 
     kb.add("➕ Kino qo‘shish")
-    kb.add("📊 Statistika")
 
     await message.answer(
         "👑 Admin panel",
@@ -88,7 +95,18 @@ async def admin_panel(message: types.Message):
     )
 
 
+# kino qo‘shish
+@dp.message_handler(lambda message: message.text == "➕ Kino qo‘shish")
+async def add_movie_start(message: types.Message):
+
+    if message.from_user.id != ADMIN:
+        return
+
+    await message.answer("🎬 Kino nomini yuboring")
+
+
 async def on_startup(dp):
+
     await create_db()
 
 
