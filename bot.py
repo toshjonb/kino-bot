@@ -18,13 +18,13 @@ dp = Dispatcher(bot, storage=storage)
 class AddMovie(StatesGroup):
     name = State()
     category = State()
-    video = State()
+    post = State()
 
 
 # START
 @dp.message_handler(commands=['start'])
 async def start(message: types.Message):
-    await message.answer("🎬 Kino botga xush kelibsiz")
+    await message.answer("🎬 Kino bot\n\nKino nomi yoki kodini yozing")
 
 
 # ADMIN PANEL
@@ -58,7 +58,6 @@ async def movie_name(message: types.Message, state: FSMContext):
     await state.update_data(name=message.text)
 
     await message.answer("📂 Kategoriya yozing")
-
     await AddMovie.category.set()
 
 
@@ -68,29 +67,29 @@ async def movie_category(message: types.Message, state: FSMContext):
 
     await state.update_data(category=message.text)
 
-    await message.answer("🎥 Endi kinoni video qilib yuboring")
+    await message.answer("📢 Endi kinoni kanalga yuklang va post linkini yuboring")
 
-    await AddMovie.video.set()
+    await AddMovie.post.set()
 
 
-# VIDEO QABUL QILISH
-@dp.message_handler(content_types=['video'], state=AddMovie.video)
-async def movie_video(message: types.Message, state: FSMContext):
+# POST LINK QABUL QILISH
+@dp.message_handler(state=AddMovie.post)
+async def movie_post(message: types.Message, state: FSMContext):
 
     data = await state.get_data()
 
     name = data["name"]
     category = data["category"]
 
-    file_id = message.video.file_id
+    try:
+        link = message.text
+        message_id = int(link.split("/")[-1])
 
-    caption = f"""
-🎬 {name}
+    except:
+        await message.answer("❌ Post link noto‘g‘ri")
+        return
 
-📂 {category}
-"""
-
-    await add_movie(name, category, file_id, caption)
+    await add_movie(name, category, message_id)
 
     await message.answer("✅ Kino bazaga qo‘shildi")
 
@@ -107,11 +106,13 @@ async def movie_code(message: types.Message):
         await message.answer("❌ Kino topilmadi")
         return
 
-    await bot.send_video(
+    await bot.forward_message(
         message.chat.id,
-        movie[3],
-        caption=movie[4]
+        CHANNEL,
+        movie[3]
     )
+
+    await add_view(movie[0])
 
 
 # QIDIRUV
@@ -124,12 +125,16 @@ async def search(message: types.Message):
         await message.answer("❌ Kino topilmadi")
         return
 
+    text = "🎬 Topilgan kinolar\n\n"
+
     for m in movies:
+        text += f"{m[0]}. {m[1]}\n"
 
-        await message.answer_video(
-            m[3],
-            caption=f"{m[1]}\nID: {m[0]}"
-        )
+    await message.answer(text)
 
 
-executor.start_polling(dp)
+async def on_startup(dp):
+    await create_db()
+
+
+executor.start_polling(dp, on_startup=on_startup)
