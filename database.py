@@ -12,8 +12,7 @@ async def create_db():
             id INTEGER PRIMARY KEY,
             name TEXT,
             category TEXT,
-            file_id TEXT,
-            caption TEXT,
+            message_id INTEGER,
             views INTEGER DEFAULT 0
         )
         """)
@@ -21,13 +20,13 @@ async def create_db():
         await db.commit()
 
 
-async def add_movie(name, category, file_id, caption):
+async def add_movie(name, category, message_id):
 
     async with aiosqlite.connect(DB) as db:
 
         await db.execute(
-            "INSERT INTO movies(name,category,file_id,caption) VALUES(?,?,?,?)",
-            (name, category, file_id, caption)
+            "INSERT INTO movies(name,category,message_id) VALUES(?,?,?)",
+            (name, category, message_id)
         )
 
         await db.commit()
